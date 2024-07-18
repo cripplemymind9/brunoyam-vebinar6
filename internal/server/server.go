@@ -1,11 +1,12 @@
 package server
 
 import (
-	"github.com/cripplemymind9/brunoyam-vebinar6/internal/domain/models"
-
-	"fmt"
 	"net/http"
-	"strconv"
+	"strings"
+	"time"
+
+	"github.com/cripplemymind9/brunoyam-vebinar6/internal/domain/models"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
@@ -16,6 +17,10 @@ type Storage interface {
 	InsertUser(models.User) error
 	UpdateUser(int, models.User) error
 	DeleteUser(int) error
+
+	//Auth methods
+	Login(models.LoginUser) (int, error)
+	Profile(models.Claims) (models.User, error)
 }
 
 type Server struct {
@@ -35,105 +40,70 @@ func NewServer (addr string, store Storage) *Server {
 func (s *Server) Run() error {
 	router := gin.Default()
 
-	usersRoutes := router.Group("/users") 
+	router.POST("/users", s.InsertUserHandler)
+
+	//Auth routes
+	router.POST("/login", s.LoginHandler)
+	router.GET("/profile", s.ProfileHandler)
+
+	//Protected routes
+	protectedUsers := router.Group("/users")
+	protectedUsers.Use(AuthMiddleWare())
 	{
-		usersRoutes.GET("/", s.GetAllUsersHandler)
-		usersRoutes.GET("/:uid", s.GetUserHandler)
-		usersRoutes.POST("/", s.InsertUserHandler)
-		usersRoutes.PUT("/:uid", s.UpdateUserHandler)
-		usersRoutes.DELETE("/:uid", s.DeleteTaskHandler)
+		protectedUsers.GET("/", s.GetAllUsersHandler)
+		protectedUsers.GET("/:uid", s.GetUserHandler)
+		protectedUsers.PUT("/:uid", s.UpdateUserHandler)
+		protectedUsers.DELETE("/:uid", s.DeleteTaskHandler)
 	}
-	
+
 	return router.Run(s.addr)
 }
 
-func (s *Server) GetAllUsersHandler(ctx *gin.Context) {
-	users, err := s.store.GetAllUsers()
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, models.Response{Message: err.Error()})
-		return
+func (s *Server) CreateToken(id int) (string, error) {
+	user, err := s.store.GetUser(id)
+	if err != nil  {
+		return "", err
 	}
 
-	ctx.JSON(http.StatusOK, users)
+	claims := &models.Claims{
+		UID: user.UID,
+		Login: user.Login,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 12).Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	return token.SignedString([]byte("secret_key"))
 }
 
-func (s *Server) InsertUserHandler(ctx *gin.Context) {
-	var user models.User
+func ValidateToken(ctx *gin.Context) (*models.Claims, error) {
+	tokenString := ctx.GetHeader("Authorization")
+	tokenString = strings.Replace(tokenString, "Bearer ", "", 1)
 
-	if err := ctx.ShouldBindBodyWithJSON(&user); err != nil {
-		ctx.JSON(http.StatusBadRequest, models.Response{Message: err.Error()})
-		return
+	claims := &models.Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte("secret_key"), nil
+	})
+	if err != nil {
+		return nil, err
 	}
-
-	if err := s.validate.Struct(user); err != nil  {
-		ctx.JSON(http.StatusBadRequest, models.Response{Message: err.Error()})
-		return
+	if !token.Valid {
+		return nil, err
 	}
-
-	if err := s.store.InsertUser(user); err != nil {
-		ctx.JSON(http.StatusInternalServerError, models.Response{Message: err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, models.Response{Message: "User was saved!"})
+	
+	return claims, nil
 }
 
-func (s *Server) GetUserHandler(ctx *gin.Context) {
-	param := ctx.Param("uid")
-	uid, err := strconv.Atoi(param)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, models.Response{Message: err.Error()})
-		return
+func AuthMiddleWare() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		_, err := ValidateToken(ctx)
+		if err != nil {
+			ctx.JSON(http.StatusUnauthorized, models.Response{Message: "Unauthorized"})
+			ctx.Abort()
+			return
+		}
+		ctx.Next()
 	}
-
-	user, err := s.store.GetUser(uid)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, models.Response{Message: err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, user)
-}
-
-func (s *Server) UpdateUserHandler(ctx *gin.Context) {
-	param := ctx.Param("uid")
-	uid, err := strconv.Atoi(param)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, models.Response{Message: err.Error()})
-		return
-	}
-
-	var user models.User
-	if err := ctx.ShouldBindBodyWithJSON(&user); err != nil {
-		ctx.JSON(http.StatusBadRequest, models.Response{Message: err.Error()})
-		return
-	}
-
-	if err := s.validate.Struct(user); err != nil {
-		ctx.JSON(http.StatusBadRequest, models.Response{Message: err.Error()})
-		return
-	}
-
-	if err := s.store.UpdateUser(uid, user); err != nil {
-		ctx.JSON(http.StatusInternalServerError, models.Response{Message: err.Error()})
-		return
-	} 
-
-	ctx.JSON(http.StatusOK, models.Response{Message: fmt.Sprintf("User №%v was updated!", uid)})
-}
-
-func (s *Server) DeleteTaskHandler(ctx *gin.Context) {
-	param := ctx.Param("uid")
-	uid, err := strconv.Atoi(param)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, models.Response{Message: err.Error()})
-		return
-	}
-
-	if err := s.store.DeleteUser(uid); err != nil {
-		ctx.JSON(http.StatusInternalServerError, models.Response{Message: err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, models.Response{Message: fmt.Sprintf("User №%v was deleted!", uid)})
 }
