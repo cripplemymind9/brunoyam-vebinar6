@@ -1,11 +1,10 @@
 package server
 
 import (
+	"github.com/cripplemymind9/brunoyam-vebinar6/internal/domain/models"
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/cripplemymind9/brunoyam-vebinar6/internal/domain/models"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
