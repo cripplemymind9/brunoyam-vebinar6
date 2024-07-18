@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
-
+	"golang.org/x/crypto/bcrypt"
 	"github.com/cripplemymind9/brunoyam-vebinar6/internal/domain/models"
 )
 
@@ -20,20 +20,20 @@ func (s *PostgresStorage) Login(input models.LoginUser) (int, error) {
 	defer rows.Close()
 
 	var uid int
-	var password string
+	var hashedPassword string
 	for rows.Next() {
 		err := rows.Scan(
 			&uid,
-			&password,
+			&hashedPassword,
 		)
 
 		if err != nil {
-			return -1, err
+			return -1, fmt.Errorf("invalid login credentials")
 		}
 	}
 
-	if password != input.Password {
-		return -1, fmt.Errorf("invalid data")
+	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(input.Password)); err != nil {
+		return -1, fmt.Errorf("invalid login credentials")
 	}
 
 	return uid, nil
