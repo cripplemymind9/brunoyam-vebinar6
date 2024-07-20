@@ -1,8 +1,6 @@
 package models
 
-import (
-	"github.com/dgrijalva/jwt-go"
-)
+import "github.com/dgrijalva/jwt-go"
 
 type User struct {
 	UID 		int 	`json:"uid"`
