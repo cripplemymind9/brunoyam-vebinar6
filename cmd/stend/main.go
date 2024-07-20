@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	store, err := storage.NewPostgresStorage(context.TODO(), "postgres://postgres:Gogaminoga2019&@localhost:5432/postgres")
+	store, err := storage.NewPostgresStorage(context.TODO(), "postgres://postgres:postgress&@localhost:5432/postgres")
 	if err != nil {
 		log.Fatal(err)
 	}

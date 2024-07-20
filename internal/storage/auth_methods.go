@@ -1,11 +1,11 @@
 package storage
 
 import (
+	"github.com/cripplemymind9/brunoyam-vebinar6/internal/domain/models"
 	"context"
 	"fmt"
 	"time"
 	"golang.org/x/crypto/bcrypt"
-	"github.com/cripplemymind9/brunoyam-vebinar6/internal/domain/models"
 )
 
 func (s *PostgresStorage) Login(input models.LoginUser) (int, error) {
