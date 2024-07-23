@@ -12,7 +12,7 @@ type Config struct {
 
 const (
 	defaultAddr  = ":8080"
-	defaultDbDSN = "postgres://postgres:Gogaminoga2019&@localhost:5432/postgres"
+	defaultDbDSN = "postgres://postgres:postgres@localhost:5432/postgres"
 )
 
 func ReadConfig() Config {
