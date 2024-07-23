@@ -36,7 +36,7 @@ func (s *Server) InsertUserHandler(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.Response{Message: "User was saved!"})
+	ctx.JSON(http.StatusOK, models.Response{Message: "user was saved"})
 }
 
 func (s *Server) GetUserHandler(ctx *gin.Context) {
@@ -80,7 +80,7 @@ func (s *Server) UpdateUserHandler(ctx *gin.Context) {
 		return
 	} 
 
-	ctx.JSON(http.StatusOK, models.Response{Message: fmt.Sprintf("User №%v was updated!", uid)})
+	ctx.JSON(http.StatusOK, models.Response{Message: fmt.Sprintf("user №%v was updated", uid)})
 }
 
 func (s *Server) DeleteTaskHandler(ctx *gin.Context) {
@@ -96,5 +96,5 @@ func (s *Server) DeleteTaskHandler(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.Response{Message: fmt.Sprintf("User №%v was deleted!", uid)})
+	ctx.JSON(http.StatusOK, models.Response{Message: fmt.Sprintf("user №%v was deleted", uid)})
 }

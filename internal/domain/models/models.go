@@ -20,6 +20,13 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
+type Book struct {
+	BookId 		int		`json:"b_id"`
+	Title 		string 	`json:"title" validate:"required"`
+	Author 		string 	`json:"author" validate:"required"`
+	UserID 		int 	`json:"uid"`
+}
+
 type Response struct {
 	Message string
 }

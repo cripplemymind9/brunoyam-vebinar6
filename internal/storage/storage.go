@@ -9,13 +9,8 @@ type PostgresStorage struct {
 	conn *pgx.Conn
 }
 
-func NewPostgresStorage(ctx context.Context, connStr string) (*PostgresStorage, error) {
-	conn, err := pgx.Connect(ctx, connStr)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := CreatePostgresDB(ctx, conn); err != nil {
+func NewPostgresStorage(conn  *pgx.Conn) (*PostgresStorage, error) {
+	if err := CreatePostgresDB(conn); err != nil {
 		return nil, err
 	}
 
@@ -24,15 +19,26 @@ func NewPostgresStorage(ctx context.Context, connStr string) (*PostgresStorage, 
 	}, nil
 }
 
-func CreatePostgresDB(ctx context.Context, conn *pgx.Conn) error {
+func CreatePostgresDB(conn *pgx.Conn) error {
 	query := `
 	CREATE TABLE IF NOT EXISTS users (
     	uid SERIAL PRIMARY KEY,
     	name TEXT,
     	login TEXT,
     	password TEXT
+	);
+	
+	CREATE TABLE IF NOT EXISTS books (
+		b_id SERIAL PRIMARY KEY,
+		author TEXT,
+		title TEXT,
+		uid INTEGER
 	);`
 
-	_, err := conn.Exec(ctx, query)
-	return err
+	_, err := conn.Exec(context.Background(), query)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

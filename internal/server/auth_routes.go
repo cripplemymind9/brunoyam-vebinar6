@@ -21,13 +21,13 @@ func (s *Server) LoginHandler(ctx *gin.Context) {
 
 	id, err := s.store.Login(input)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, err.Error())
+		ctx.JSON(http.StatusBadRequest, models.Response{Message: err.Error()})
 		return
 	}
 
 	token, err := s.CreateToken(id)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, err.Error())
+		ctx.JSON(http.StatusBadRequest, models.Response{Message: err.Error()})
 		return
 	}
 
@@ -43,6 +43,7 @@ func (s *Server) ProfileHandler (ctx *gin.Context) {
 
 	user, err := s.store.Profile(*claims)
 	if err != nil {
+
 		ctx.JSON(http.StatusUnauthorized, models.Response{Message: "Unauthorized"})
 		return
 	}
