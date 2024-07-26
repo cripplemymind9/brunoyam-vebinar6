@@ -2,20 +2,26 @@ package server
 
 import (
 	"github.com/cripplemymind9/brunoyam-vebinar6/internal/domain/models"
-	"net/http"
-	"strings"
-	"time"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"net/http"
+	"strings"
+	"time"
 )
 
 type Storage interface {
+	//User methods
 	GetAllUsers() ([]models.User, error)
 	GetUser(int) (models.User, error)
 	InsertUser(models.User) error
 	UpdateUser(int, models.User) error
 	DeleteUser(int) error
+	GetUserId(models.Claims) (int, error)
+
+	//Book methods
+	InsertBooks([]models.Book, int) error
+	GetBooksByUserId(int) ([]models.Book, error)
 
 	//Auth methods
 	Login(models.LoginUser) (int, error)
@@ -45,7 +51,7 @@ func (s *Server) Run() error {
 	router.POST("/login", s.LoginHandler)
 	router.GET("/profile", s.ProfileHandler)
 
-	//Protected routes
+	//Protected user routes
 	protectedUsers := router.Group("/users")
 	protectedUsers.Use(AuthMiddleWare())
 	{
@@ -53,6 +59,14 @@ func (s *Server) Run() error {
 		protectedUsers.GET("/:uid", s.GetUserHandler)
 		protectedUsers.PUT("/:uid", s.UpdateUserHandler)
 		protectedUsers.DELETE("/:uid", s.DeleteTaskHandler)
+	}
+
+	//Protected book routes
+	protectedBooks := router.Group("/books")
+	protectedBooks.Use(AuthMiddleWare())
+	{
+		protectedBooks.POST("/", s.InsertBooksHandler)
+		protectedBooks.GET("/", s.GetBooksHandler)
 	}
 
 	return router.Run(s.addr)
