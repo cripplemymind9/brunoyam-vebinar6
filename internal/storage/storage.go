@@ -1,8 +1,12 @@
 package storage
 
 import (
-	"context"
+	"fmt"
+	"errors"
 	"github.com/jackc/pgx/v5"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 type PostgresStorage struct {
@@ -10,33 +14,22 @@ type PostgresStorage struct {
 }
 
 func NewPostgresStorage(conn  *pgx.Conn) (*PostgresStorage, error) {
-	if err := CreatePostgresDB(conn); err != nil {
-		return nil, err
-	}
-
 	return &PostgresStorage{
 		conn: conn,
 	}, nil
 }
 
-func CreatePostgresDB(conn *pgx.Conn) error {
-	query := `
-	CREATE TABLE IF NOT EXISTS users (
-    	uid SERIAL PRIMARY KEY,
-    	name TEXT,
-    	login TEXT,
-    	password TEXT
-	);
-	
-	CREATE TABLE IF NOT EXISTS books (
-		b_id SERIAL PRIMARY KEY,
-		author TEXT,
-		title TEXT,
-		uid INTEGER
-	);`
-
-	_, err := conn.Exec(context.Background(), query)
+func Migrations(dbAddr, migrationsPath string) error {
+	migratePath := fmt.Sprintf("file://%s", migrationsPath)
+	m, err := migrate.New(migratePath, dbAddr)
 	if err != nil {
+		return err
+	}
+
+	if err := m.Up(); err != nil {
+		if errors.Is(err, migrate.ErrNoChange) {
+			return nil
+		}
 		return err
 	}
 

@@ -83,7 +83,7 @@ func (s *Server) UpdateUserHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, models.Response{Message: fmt.Sprintf("user №%v was updated", uid)})
 }
 
-func (s *Server) DeleteTaskHandler(ctx *gin.Context) {
+func (s *Server) DeleteUserHandler(ctx *gin.Context) {
 	param := ctx.Param("uid")
 	uid, err := strconv.Atoi(param)
 	if err != nil {
