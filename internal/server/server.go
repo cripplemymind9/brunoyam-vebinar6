@@ -1,13 +1,15 @@
 package server
 
 import (
+	"context"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/cripplemymind9/brunoyam-vebinar6/internal/domain/models"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type Storage interface {
@@ -29,16 +31,21 @@ type Storage interface {
 }
 
 type Server struct {
-	addr 		string
+	httpServer *http.Server
 	store 		Storage
 	validate 	*validator.Validate
+	deleteChan	chan int
 }
 
 func NewServer (addr string, store Storage) *Server {
+	delChan := make(chan int, 5)
 	return &Server{
-		addr: 		addr,
+		httpServer: &http.Server{
+			Addr: 		addr,
+		},
 		store: 		store,
 		validate: 	validator.New(),
+		deleteChan: delChan,
 	}
 }
 
@@ -58,7 +65,7 @@ func (s *Server) Run() error {
 		protectedUsers.GET("/", s.GetAllUsersHandler)
 		protectedUsers.GET("/:uid", s.GetUserHandler)
 		protectedUsers.PUT("/:uid", s.UpdateUserHandler)
-		protectedUsers.DELETE("/:uid", s.DeleteTaskHandler)
+		protectedUsers.DELETE("/:uid", s.DeleteUserHandler)
 	}
 
 	//Protected book routes
@@ -69,7 +76,13 @@ func (s *Server) Run() error {
 		protectedBooks.GET("/", s.GetBooksHandler)
 	}
 
-	return router.Run(s.addr)
+	s.httpServer.Handler = router
+
+	return s.httpServer.ListenAndServe()
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.httpServer.Shutdown(ctx)
 }
 
 func (s *Server) CreateToken(id int) (string, error) {

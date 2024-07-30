@@ -4,7 +4,6 @@ import (
 	"github.com/cripplemymind9/brunoyam-vebinar6/internal/domain/models"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"fmt"
 )
 
 func (s *Server) GetBooksHandler(ctx *gin.Context) {
@@ -19,7 +18,6 @@ func (s *Server) GetBooksHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, models.Response{Message: "Unauthorized"})
 		return
 	}
-	fmt.Printf("uid - %v\n", uid)
 
 	books, err := s.store.GetBooksByUserId(uid)
 	if err != nil {
@@ -56,7 +54,6 @@ func (s *Server) InsertBooksHandler(ctx *gin.Context) {
 		}
 	}
 	
-
 	if err := s.store.InsertBooks(books, uid); err != nil {
 		ctx.JSON(http.StatusInternalServerError, models.Response{Message: err.Error()})
 		return
